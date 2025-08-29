@@ -1,0 +1,46 @@
+# NetCrate Template: Basic Network Scan
+name: basic_scan
+version: v1
+description: "Basic network discovery and port scanning"
+author: "NetCrate Team"
+tags: ["basic", "discovery", "scanning"]
+require_dangerous: false
+
+parameters:
+  - name: target_range
+    description: "Target network range (CIDR notation)"
+    type: string
+    required: true
+    default: "auto"
+    validation: "cidr"
+  
+  - name: ports
+    description: "Port range to scan"
+    type: string
+    required: false
+    default: "top100"
+    validation: "port_range"
+
+steps:
+  - name: discover
+    operation: discover
+    with:
+      targets: "{{ .target_range }}"
+      rate: 100
+      timeout: 1000
+    on_empty: prompt
+
+  - name: scan_ports
+    operation: scan.ports
+    with:
+      targets: "{{ .discover.hosts }}"
+      ports: "{{ .ports }}"
+      concurrency: 200
+      timeout: 800
+    depends_on: discover
+
+  - name: summary
+    operation: output.show
+    with:
+      format: table
+    depends_on: scan_ports

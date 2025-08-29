@@ -1,0 +1,55 @@
+name: "network_discovery"
+version: "1.0"
+description: "Network discovery and asset enumeration template"
+author: "NetCrate Team"
+tags: ["discovery", "network", "enumeration", "reconnaissance"]
+require_dangerous: false
+
+parameters:
+  - name: "target_network"
+    description: "Target network in CIDR notation"
+    type: "cidr"
+    required: true
+    validation: "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}/[0-9]{1,2}$"
+    
+  - name: "discovery_method"
+    description: "Discovery method to use"
+    type: "string"
+    required: false
+    default: "auto"
+    validation: "^(icmp|ping|tcp|arp|auto)$"
+    
+  - name: "common_ports"
+    description: "Common ports to probe"
+    type: "string"
+    required: false
+    default: "22,80,443,3389,5900"
+
+steps:
+  - name: "ping_sweep"
+    operation: "discover"
+    with:
+      targets: ["{{ .target_network }}"]
+      methods: ["{{ .discovery_method }}"]
+      timeout: "2s"
+      concurrency: 200
+      tcp_ports: "{{ .common_ports | split \",\" | map \"atoi\" }}"
+    on_empty: "continue"
+
+  - name: "live_host_scan"
+    operation: "scan_ports"
+    with:
+      targets: "{{ .ping_sweep.live_hosts }}"
+      ports: "top100"
+      scan_type: "connect"
+      service_detection: true
+    depends_on: "ping_sweep"
+    on_empty: "continue"
+
+  - name: "service_enumeration"
+    operation: "banner_grab"
+    with:
+      targets: "{{ .ping_sweep.live_hosts }}"
+      ports: "{{ .live_host_scan.open_ports }}"
+      timeout: "5s"
+    depends_on: "live_host_scan"

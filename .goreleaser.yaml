@@ -1,0 +1,128 @@
+# GoReleaser configuration for NetCrate
+version: 2
+
+project_name: netcrate
+
+before:
+  hooks:
+    - go mod tidy
+    - go generate ./...
+
+builds:
+  - id: netcrate
+    main: ./cmd/netcrate
+    binary: netcrate
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+universal_binaries:
+  - id: netcrate-universal
+    ids:
+      - netcrate
+    replace: true
+    name_template: "netcrate"
+
+archives:
+  - id: netcrate-archive
+    builds:
+      - netcrate
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+      - LEGAL.md
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+  groups:
+    - title: Features
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: "Bug fixes"
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: Others
+      order: 999
+
+release:
+  github:
+    owner: netcrate
+    name: netcrate
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## NetCrate {{ .Tag }} Release
+    
+    **⚠️ Legal Notice**: This tool is intended for authorized security testing only. 
+    Please read the [legal compliance guide](LEGAL.md) before use.
+    
+  footer: |
+    ## Installation
+    
+    ### Homebrew (macOS)
+    ```bash
+    brew tap netcrate/tap
+    brew install netcrate
+    ```
+    
+    ### Direct Download
+    Download the appropriate binary for your platform from the assets above.
+    
+    ### Verify Installation
+    ```bash
+    netcrate --version
+    ```
+
+brews:
+  - repository:
+      owner: netcrate
+      name: homebrew-tap
+      branch: main
+    directory: Formula
+    homepage: https://github.com/netcrate/netcrate
+    description: "Network security testing toolkit for authorized penetration testing"
+    license: MIT
+    skip_upload: auto
+    custom_block: |
+      head do
+        url "https://github.com/netcrate/netcrate.git", branch: "main"
+        depends_on "go" => :build
+      end
+    test: |
+      system "#{bin}/netcrate", "--version"
+    install: |
+      bin.install "netcrate"
+      man1.install "docs/man/netcrate.1" if File.exist?("docs/man/netcrate.1")

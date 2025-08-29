@@ -1,0 +1,34 @@
+# Test Homebrew formula in CI
+name: Test Formula
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Homebrew
+      id: set-up-homebrew
+      uses: Homebrew/actions/setup-homebrew@master
+      
+    - name: Audit formula
+      run: brew audit --strict --online ./Formula/netcrate.rb
+      
+    - name: Install dependencies
+      run: brew install --only-dependencies ./Formula/netcrate.rb
+      
+    - name: Install formula
+      run: brew install --build-from-source ./Formula/netcrate.rb
+      
+    - name: Test formula
+      run: brew test ./Formula/netcrate.rb

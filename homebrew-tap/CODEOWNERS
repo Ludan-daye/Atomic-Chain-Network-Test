@@ -1,0 +1,7 @@
+# NetCrate Homebrew Tap Code Owners
+# These users will be automatically requested for review when PRs are opened
+
+* @netcrate/maintainers
+
+# Formula-specific owners
+Formula/netcrate.rb @netcrate/maintainers

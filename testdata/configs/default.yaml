@@ -1,0 +1,20 @@
+# NetCrate Default Configuration
+rate_limits:
+  profile: "safe"
+
+compliance:
+  allow_public: false
+  require_confirmation: true
+  allowed_ranges:
+    - "10.0.0.0/8"
+    - "172.16.0.0/12"
+    - "192.168.0.0/16"
+    - "127.0.0.0/8"
+  blocked_ranges:
+    - "0.0.0.0/8"
+    - "224.0.0.0/3"
+
+output:
+  workspace_dir: "~/.netcrate/runs"
+  retention_days: 30
+  max_runs: 1000

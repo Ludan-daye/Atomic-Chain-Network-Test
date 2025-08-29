@@ -1,0 +1,49 @@
+name: "quick_recon"
+version: "1.0"
+description: "Quick reconnaissance template for rapid assessment"
+author: "NetCrate Team"
+tags: ["quick", "reconnaissance", "fast", "overview"]
+require_dangerous: false
+
+parameters:
+  - name: "target"
+    description: "Target host or network"
+    type: "string"
+    required: true
+    
+  - name: "speed"
+    description: "Scanning speed"
+    type: "string"
+    required: false
+    default: "fast"
+    validation: "^(slow|medium|fast|ludicrous)$"
+
+steps:
+  - name: "fast_discovery"
+    operation: "discover"
+    with:
+      targets: ["{{ .target }}"]
+      methods: ["ping"]
+      timeout: "1s"
+      concurrency: 500
+      rate_profile: "{{ .speed }}"
+    on_empty: "fail"
+
+  - name: "common_ports"
+    operation: "scan_ports"
+    with:
+      targets: "{{ .fast_discovery.live_hosts }}"
+      ports: "21,22,23,25,53,80,110,111,135,139,143,443,993,995,1723,3389,5900,8080"
+      scan_type: "connect"
+      timeout: "1s"
+      rate_profile: "{{ .speed }}"
+    depends_on: "fast_discovery"
+
+  - name: "quick_banner"
+    operation: "banner_grab"
+    with:
+      targets: "{{ .fast_discovery.live_hosts }}"
+      ports: "{{ .common_ports.open_ports }}"
+      timeout: "2s"
+      buffer_size: 512
+    depends_on: "common_ports"

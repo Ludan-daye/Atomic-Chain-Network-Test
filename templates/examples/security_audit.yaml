@@ -1,0 +1,72 @@
+name: "security_audit"
+version: "1.0"
+description: "Comprehensive security audit template for internal networks"
+author: "NetCrate Team"
+tags: ["security", "audit", "comprehensive", "internal"]
+require_dangerous: false
+
+parameters:
+  - name: "target_range"
+    description: "Target IP range or single host"
+    type: "string"
+    required: true
+    
+  - name: "audit_depth"
+    description: "Audit depth level"
+    type: "string"
+    required: false
+    default: "standard"
+    validation: "^(quick|standard|deep)$"
+    
+  - name: "include_udp"
+    description: "Include UDP port scanning"
+    type: "bool"
+    required: false
+    default: false
+
+steps:
+  - name: "host_discovery"
+    operation: "discover"
+    with:
+      targets: ["{{ .target_range }}"]
+      methods: ["ping", "tcp"]
+      timeout: "3s"
+    on_empty: "fail"
+
+  - name: "tcp_port_scan"
+    operation: "scan_ports"
+    with:
+      targets: "{{ .host_discovery.live_hosts }}"
+      ports: "{{ if eq .audit_depth \"quick\" }}top100{{ else if eq .audit_depth \"standard\" }}top1000{{ else }}1-65535{{ end }}"
+      scan_type: "connect"
+      service_detection: true
+      timeout: "{{ if eq .audit_depth \"deep\" }}10s{{ else }}3s{{ end }}"
+    depends_on: "host_discovery"
+
+  - name: "udp_port_scan"
+    operation: "scan_ports"
+    with:
+      targets: "{{ .host_discovery.live_hosts }}"
+      ports: "53,67,68,69,123,135,137,138,139,161,162,445,500,514,1434"
+      scan_type: "udp"
+      timeout: "5s"
+    depends_on: "host_discovery"
+    on_error: "continue"
+    enabled: "{{ .include_udp }}"
+
+  - name: "service_detection"
+    operation: "banner_grab"
+    with:
+      targets: "{{ .host_discovery.live_hosts }}"
+      ports: "{{ .tcp_port_scan.open_ports }}"
+      protocols: ["tcp"]
+      timeout: "{{ if eq .audit_depth \"deep\" }}10s{{ else }}5s{{ end }}"
+    depends_on: "tcp_port_scan"
+
+  - name: "service_fingerprinting"
+    operation: "fingerprint"
+    with:
+      targets: "{{ .host_discovery.live_hosts }}"
+      services: "{{ .service_detection.detected_services }}"
+      deep_scan: "{{ eq .audit_depth \"deep\" }}"
+    depends_on: "service_detection"

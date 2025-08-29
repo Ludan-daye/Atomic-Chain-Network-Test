@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go mod:*)",
+      "Bash(brew install:*)",
+      "Bash(ruby:*)",
+      "Bash(git add:*)",
+      "Bash(git init:*)",
+      "Bash(git commit:*)",
+      "Bash(go:*)",
+      "Bash(GOPROXY=direct go mod tidy)",
+      "Bash(GOPROXY=off go mod tidy)",
+      "Bash(./netcrate-simple:*)",
+      "Bash(chmod:*)",
+      "Bash(./test_interactive.sh)",
+      "Bash(./test_b1_enhanced.sh:*)",
+      "Bash(./test_b1_2_sampling.sh:*)",
+      "Bash(timeout:*)",
+      "Bash(./test_b1_3_method_fallback.sh:*)",
+      "Bash(./test_b1_4_adaptive_rate.sh:*)",
+      "Bash(./test_b1_5_result_merge.sh:*)",
+      "Bash(GOPROXY=direct go get gopkg.in/yaml.v2)",
+      "Bash(GOPROXY=off go build -o netcrate ./cmd/netcrate)",
+      "Bash(GOPROXY=off go build -o dist/netcrate ./cmd/netcrate)",
+      "Bash(./build.sh)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

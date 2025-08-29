@@ -1,0 +1,61 @@
+name: "web_application_scan"
+version: "1.0"
+description: "Comprehensive web application security assessment template"
+author: "NetCrate Team"
+tags: ["web", "http", "https", "vulnerability", "security"]
+require_dangerous: true
+
+parameters:
+  - name: "target"
+    description: "Target web application URL or domain"
+    type: "endpoint"
+    required: true
+    validation: "^https?://[a-zA-Z0-9.-]+.*$"
+    
+  - name: "ports"
+    description: "HTTP/HTTPS ports to scan"
+    type: "ports"
+    required: false
+    default: "80,443,8080,8443,3000,8000"
+    
+  - name: "rate_profile"
+    description: "Scanning speed profile"
+    type: "string"
+    required: false
+    default: "medium"
+    validation: "^(slow|medium|fast)$"
+
+steps:
+  - name: "discovery"
+    operation: "discover"
+    with:
+      targets: ["{{ .target }}"]
+      methods: ["tcp"]
+      ports: "{{ .ports | split \",\" | map \"atoi\" }}"
+      rate_profile: "{{ .rate_profile }}"
+    on_empty: "fail"
+
+  - name: "port_scan"
+    operation: "scan_ports" 
+    with:
+      targets: ["{{ .target }}"]
+      ports: "{{ .ports }}"
+      scan_type: "connect"
+      service_detection: true
+      rate_profile: "{{ .rate_profile }}"
+    depends_on: "discovery"
+
+  - name: "banner_grab"
+    operation: "banner_grab"
+    with:
+      targets: "{{ .discovery.live_hosts }}"
+      ports: "{{ .port_scan.open_ports }}"
+      protocols: ["http", "https"]
+    depends_on: "port_scan"
+
+  - name: "fingerprint"
+    operation: "fingerprint"
+    with:
+      targets: "{{ .discovery.live_hosts }}"
+      services: "{{ .banner_grab.detected_services }}"
+    depends_on: "banner_grab"
