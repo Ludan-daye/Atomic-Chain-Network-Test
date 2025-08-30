@@ -59,7 +59,7 @@ brews:
     repository:
       owner: Ludan-daye
       name: homebrew-tap
-    folder: Formula
+    directory: Formula
     homepage: "https://github.com/Ludan-daye/Atomic-Chain-Network-Test"
     description: "Network security testing toolkit with compliance controls"
     license: "MIT"
